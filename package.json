@@ -1,0 +1,33 @@
+{
+  "name": "dsh-workloads-local-ui1",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Durable workspace-owned local-process workloads and a DSH Runtime Center.",
+  "license": "MIT",
+  "type": "module",
+  "main": "lib/index.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yewenyell-lang/dsh-workloads.git"
+  },
+  "scripts": {
+    "check": "node --check lib/index.js && node --check lib/runner.mjs && node --check lib/client.js && node --check lib/tools.mjs",
+    "test": "node test/client-register.mjs && node test/registry-smoke.mjs && node test/tool-adapter-smoke.mjs"
+  },
+  "exports": {
+    ".": { "default": "./lib/index.js" },
+    "./client": { "default": "./lib/client.js" },
+    "./tools": { "default": "./lib/tools.mjs" },
+    "./package.json": "./package.json"
+  },
+  "dsh": {
+    "client": {
+      "platform": "web",
+      "inject": [
+        "@deepseek-ai/dsh-client-runtime",
+        "@deepseek-ai/dsh-client-ui-slots",
+        "@deepseek-ai/dsh-client-ui-conversation"
+      ]
+    }
+  }
+}
