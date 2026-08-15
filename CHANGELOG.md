@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.2.0 - 2026-08-14
+
+- Declared an installable DSH profile bundle through `dsh.bundle.patch`.
+- Added a bundle patch that mounts the shared Host Registry and Runtime Center with legacy migration disabled by default.
+- Added package exports/files metadata and a bundle manifest smoke test.
+- Prepared public GitHub discovery and installation documentation.
+
 ## 0.1.0 - 2026-08-14
 
 - Added the Host-owned `workloads` registry and Windows local-process provider.

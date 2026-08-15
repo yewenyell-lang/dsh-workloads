@@ -1,8 +1,10 @@
 # DSH Workloads
 
+[English](README.md) | [简体中文](README.zh-CN.md)
+
 Durable, workspace-owned long-running processes for DeepSeek Harness, plus a Runtime Center that keeps DSH Session Jobs and Workspace Workloads visible without conflating their lifecycles.
 
-> Current status: Windows local-process provider prototype validated against DSH `0.1.0-rc.6`. The repository is private while the Service/API contract is still evolving.
+> Current status: public installable profile bundle with a Windows local-process Provider, validated against DSH `0.1.0-rc.6`. The Service/API contract remains pre-1.0.
 
 ## Why Workloads are not Jobs
 
@@ -86,29 +88,47 @@ workload_restart
 
 Set `enableProcAliases: false` to omit the six legacy `proc_*` aliases. The tool layer is a consumer only; it must not publish or isolate the shared Host `workloads` service.
 
-## Cordis composition
+## Install
 
-Install or link the repository into a Web profile and add a Host row:
+Install the tagged GitHub package into the Web profile:
 
-```yaml
-- insert:
-    - id: dsh-workloads-local-ui1
-      name: dsh-workloads-local-ui1
-      config:
-        # Optional roots containing legacy <workspace-hash> process records.
-        legacyProcessRoots: []
+```powershell
+dsh plugin --profile web add github:yewenyell-lang/dsh-workloads#v0.2.0
 ```
 
-Add the tool consumer only to presets that should control Workloads:
+The package declares `dsh.bundle.patch`, so `dsh plugin` automatically adds it to `dsh.profile.bundles`. Its [`cordis.patch.yml`](cordis.patch.yml) mounts the Host Registry, local-process Provider, Web API, and Runtime Center with legacy migration disabled by default. Restart the existing DSH Web process and refresh the browser after installation.
+
+Verify the composed profile without starting another server:
+
+```powershell
+dsh --profile web --dump-config
+```
+
+To remove the bundle:
+
+```powershell
+dsh plugin --profile web remove dsh-workloads-local-ui1
+```
+
+Add the tool consumer only to Agent presets that should control Workloads:
 
 ```yaml
 - id: tool-workloads
-  name: 'file:///ABSOLUTE/PATH/TO/dsh-workloads/lib/tools.mjs'
+  name: dsh-workloads-local-ui1/tools
   config:
     enableProcAliases: true
 ```
 
-The Registry belongs in the Host plane because it crosses Sessions. Only the tool consumer belongs in an Agent preset.
+The Registry belongs in the Host plane because it crosses Sessions. Only the tool consumer belongs in an Agent preset; do not isolate the shared `workloads` service there.
+
+To opt into legacy migration, override the bundle row in the Web profile's later `cordis.patch.yml` layer and restate its complete config:
+
+```yaml
+- id: dsh-workloads-local-ui1
+  config:
+    legacyProcessRoots:
+      - C:\\absolute\\legacy-process-root
+```
 
 ## Local-process safety
 
@@ -143,7 +163,7 @@ The suite uses temporary `DSH_HOME` and workspace directories and covers Client 
 2. The current Web carrier is an exact session-authorized route; upstream integration should use a typed `apiProxy` domain/mux.
 3. Workload snapshots currently poll every three seconds; a future Client mirror should resync on `connection/reset` and consume Host change events.
 4. The local-process provider is Windows-only. PM2, Docker Compose, systemd, SSH, and Kubernetes should be separate Providers behind the same Registry contract.
-5. A future Service Definition package should formalize types, Provider registration, `attachController()`, desired state, and reconciliation leases before public release.
+5. A future Service Definition package should formalize types, Provider registration, `attachController()`, desired state, and reconciliation leases before a stable 1.0 release.
 
 ## License
 

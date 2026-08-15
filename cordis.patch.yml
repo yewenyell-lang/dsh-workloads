@@ -1,0 +1,9 @@
+# DSH Workloads profile bundle.
+# Add the shared Host Registry/local-process Provider and its Web Runtime Center.
+# Agent-facing workload_* tools remain opt-in per preset through ./lib/tools.mjs.
+
+- insert:
+    - id: dsh-workloads-local-ui1
+      name: dsh-workloads-local-ui1
+      config:
+        legacyProcessRoots: []

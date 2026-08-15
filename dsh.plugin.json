@@ -1,6 +1,6 @@
 {
   "id": "dsh-workloads-local-ui1",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "main": "lib/index.js",
   "description": "Durable workspace-owned local-process workloads and the DSH Runtime Center.",
   "engines": { "dsh": ">=0.0.1" },

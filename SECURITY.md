@@ -1,6 +1,6 @@
 # Security
 
-Please report vulnerabilities through the private repository's GitHub Security Advisory flow rather than a public issue.
+Please report vulnerabilities through the repository's GitHub Security Advisory flow rather than a public issue.
 
 ## Boundaries
 
