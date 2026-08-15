@@ -36,6 +36,7 @@ start(workspaceRoot, spec, existing?, control?)
 wait(workspaceRoot, workloadId, readiness, signal?)
 logs(workspaceRoot, workloadId, maxBytes?)
 stop(workspaceRoot, workloadId, control?)
+stopAll(workspaceRoot, control?)
 restart(workspaceRoot, workloadId, control?)
 subscribe(listener)
 ```
@@ -68,7 +69,8 @@ Client 注册 session-scope `conversation.view` 条目 `runtime-center`：
 - Workspace Workloads 使用 Session 授权的三秒完整快照；
 - 相同 cwd 的对话共享 Workload，Session Job 仍彼此隔离；
 - 展示 phase、health、PID、run identity、readiness 和最多 32 KiB 的日志尾部；
-- stop/restart 需要二次点击，并在 Host 重新鉴权。
+- 每个 Workload 卡片的「停止」按钮任何阶段都可用（对已终止服务是幂等操作），「重启」保持原行为；
+- 「工作区长期服务」区块头部提供「全部关闭」，仅在有运行中服务时显示，与 stop/restart 一样需要二次点击，并在 Host 重新鉴权。
 
 未来 DSH 原生版本应以 `apiProxy` domain 和 Client snapshot mirror 替代 Workload 轮询。
 
@@ -77,7 +79,7 @@ Client 注册 session-scope `conversation.view` 条目 `runtime-center`：
 将已标记版本安装到 Web profile：
 
 ```powershell
-dsh plugin --profile web add github:yewenyell-lang/dsh-workloads#v0.2.0
+dsh plugin --profile web add github:yewenyell-lang/dsh-workloads#v0.3.0
 ```
 
 包声明了 `dsh.bundle.patch`，`dsh plugin` 会自动把它加入 `dsh.profile.bundles`。安装后重启已有 DSH Web 进程并刷新浏览器。
@@ -113,10 +115,11 @@ workload_start
 workload_wait
 workload_logs
 workload_stop
+workload_stop_all
 workload_restart
 ```
 
-设置 `enableProcAliases: false` 可关闭六个旧 `proc_*` 兼容别名。
+设置 `enableProcAliases: false` 可关闭七个旧 `proc_*` 兼容别名（含 `proc_stop_all`）。
 
 ## local-process 安全边界
 

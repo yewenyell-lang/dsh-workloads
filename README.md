@@ -23,7 +23,7 @@ Typical Workloads include dev servers, watchers, debuggers, proxies, local middl
 
 - `.` — Host plugin that provides `ctx.workloads`, the local-process provider, and a session-authorized Web API.
 - `./client` — Web Client plugin that registers the `运行中心` entry in `conversation.view`.
-- `./tools` — opt-in Agent-preset consumer exposing six `workload_*` tools and optional `proc_*` compatibility aliases.
+- `./tools` — opt-in Agent-preset consumer exposing seven `workload_*` tools and optional `proc_*` compatibility aliases.
 
 ## Host Service
 
@@ -35,6 +35,7 @@ start(workspaceRoot, spec, existing?, control?)
 wait(workspaceRoot, workloadId, readiness, signal?)
 logs(workspaceRoot, workloadId, maxBytes?)
 stop(workspaceRoot, workloadId, control?)
+stopAll(workspaceRoot, control?)
 restart(workspaceRoot, workloadId, control?)
 subscribe(listener)
 ```
@@ -69,7 +70,8 @@ The Client registers a session-scoped `conversation.view` entry with ID `runtime
 - Workspace Workloads use a session-authorized complete snapshot every three seconds.
 - Same-cwd conversations see the same Workloads while retaining separate Session Job lists.
 - Readiness, phase, health, PID, run identity, and a redacted 32 KiB log tail are shown.
-- Stop and restart require a second click confirmation and are re-authorized on the Host.
+- Each Workload card's `Stop` button is available in every phase (idempotent for already-terminated services); `Restart` keeps its original behavior.
+- The `工作区长期服务` section header shows a `Stop all` button only while at least one service is active; like stop/restart it needs a second-click confirmation and is re-authorized on the Host.
 
 A future DSH-native version should replace Workload polling with an `apiProxy` domain and Client snapshot mirror. Session Jobs already use the native push mirror.
 
@@ -83,17 +85,18 @@ workload_start
 workload_wait
 workload_logs
 workload_stop
+workload_stop_all
 workload_restart
 ```
 
-Set `enableProcAliases: false` to omit the six legacy `proc_*` aliases. The tool layer is a consumer only; it must not publish or isolate the shared Host `workloads` service.
+Set `enableProcAliases: false` to omit the seven legacy `proc_*` aliases (including `proc_stop_all`). The tool layer is a consumer only; it must not publish or isolate the shared Host `workloads` service.
 
 ## Install
 
 Install the tagged GitHub package into the Web profile:
 
 ```powershell
-dsh plugin --profile web add github:yewenyell-lang/dsh-workloads#v0.2.0
+dsh plugin --profile web add github:yewenyell-lang/dsh-workloads#v0.3.0
 ```
 
 The package declares `dsh.bundle.patch`, so `dsh plugin` automatically adds it to `dsh.profile.bundles`. Its [`cordis.patch.yml`](cordis.patch.yml) mounts the Host Registry, local-process Provider, Web API, and Runtime Center with legacy migration disabled by default. Restart the existing DSH Web process and refresh the browser after installation.
@@ -155,7 +158,7 @@ npm run check
 npm test
 ```
 
-The suite uses temporary `DSH_HOME` and workspace directories and covers Client registration, optional legacy migration, start, combined readiness, redaction, stable restart identity, stop, action audit metadata, six `workload_*` tools, optional aliases, and cleanup.
+The suite uses temporary `DSH_HOME` and workspace directories and covers Client registration, optional legacy migration, start, combined readiness, redaction, stable restart identity, stop, stop-all, action audit metadata, seven `workload_*` tools, optional aliases, and cleanup.
 
 ## Known limitations and roadmap
 

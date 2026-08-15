@@ -13,17 +13,22 @@ const tools=new Map();const registry=new LocalWorkloadRegistry();const ctx={
 }
 const adapter=await import(pathToFileURL(path.join(here,'..','lib','tools.mjs')).href+'?smoke='+Date.now())
 adapter.apply(ctx)
-const expected=['workload_list','workload_start','workload_wait','workload_logs','workload_stop','workload_restart','proc_list','proc_start','proc_wait','proc_logs','proc_stop','proc_restart']
+const expected=['workload_list','workload_start','workload_wait','workload_logs','workload_stop','workload_stop_all','workload_restart','proc_list','proc_start','proc_wait','proc_logs','proc_stop','proc_stop_all','proc_restart']
 if(expected.some((name)=>!tools.has(name)))throw new Error('tool registration missing')
 const exec={agent:{session:{}},signal:new AbortController().signal}
 let port=43210
 while(port<43300){const free=await new Promise((resolve)=>{const s=net.createServer();s.once('error',()=>resolve(false));s.listen(port,'127.0.0.1',()=>s.close(()=>resolve(true)))});if(free)break;port++}
 let workloadId
+let secondId
 try{
   const command=`"${process.execPath}" "${path.join(here,'smoke-server.mjs')}" ${port}`
   const started=JSON.parse(await tools.get('workload_start').execute({command,label:`tools:${port}`},exec));workloadId=started.workloadId
+  const second=JSON.parse(await tools.get('workload_start').execute({command:`"${process.execPath}" "${path.join(here,'smoke-server.mjs')}" ${port+1}`,label:`tools:${port+1}`},exec));secondId=second.workloadId
   const listed=JSON.parse(await tools.get('proc_list').execute({active_only:true},exec));if(!listed.workloads.some((x)=>x.workloadId===workloadId))throw new Error('compat list failed')
   const ready=JSON.parse(await tools.get('proc_wait').execute({job_id:workloadId,port,timeout_ms:15000},exec));if(!ready.ready)throw new Error('compat wait failed')
+  const allStopped=JSON.parse(await tools.get('workload_stop_all').execute({},exec));if(allStopped.requested!==2||allStopped.stopped!==2)throw new Error('stop_all failed')
+  if(JSON.parse(await tools.get('workload_list').execute({active_only:true},exec)).workloads.length!==0)throw new Error('stop_all left active workloads')
+  const restarted=JSON.parse(await tools.get('workload_start').execute({command,label:`tools:${port}`},exec));workloadId=restarted.workloadId
   const stopped=JSON.parse(await tools.get('workload_stop').execute({workload_id:workloadId},exec));if(stopped.phase!=='stopped'||stopped.lastAction?.source!=='tool'||stopped.lastAction?.type!=='stop')throw new Error('tool stop audit failed')
-  console.log(JSON.stringify({toolCount:tools.size,workloadId,compatibility:true,stopped:stopped.phase}))
-}finally{if(workloadId){try{await registry.stop(workspace,workloadId)}catch{}}fs.rmSync(temp,{recursive:true,force:true})}
+  console.log(JSON.stringify({toolCount:tools.size,workloadId,compatibility:true,stopAll:allStopped.stopped,stopped:stopped.phase}))
+}finally{if(workloadId){try{await registry.stop(workspace,workloadId)}catch{}}if(secondId){try{await registry.stop(workspace,secondId)}catch{}}await new Promise((resolve)=>setTimeout(resolve,1500));fs.rmSync(temp,{recursive:true,force:true,maxRetries:5,retryDelay:300})}

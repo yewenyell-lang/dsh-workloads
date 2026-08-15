@@ -33,6 +33,7 @@ const node = process.execPath
 const server = path.join(here, 'smoke-server.mjs')
 const command = `"${node}" "${server}" ${port}`
 let started
+let second
 try {
   started = await registry.start(workspace, { command, label:`smoke:${port}` })
   if (started.phase !== 'running' || started.generation !== 1) throw new Error('start state invalid')
@@ -40,13 +41,24 @@ try {
   if (!ready.ready) throw new Error('readiness failed')
   const logs = registry.logs(workspace, started.workloadId, 32768)
   if (!logs.log.includes('[REDACTED]') || logs.log.includes('smoke-only-value')) throw new Error('log redaction failed')
+  second = await registry.start(workspace, { command: `"${node}" "${server}" ${port + 1}`, label:`smoke:${port + 1}` })
+  if (second.phase !== 'running') throw new Error('second start failed')
+  const allStopped = await registry.stopAll(workspace)
+  if (allStopped.requested !== 2 || allStopped.stopped !== 2 || allStopped.results.some((item) => !item.ok || item.phase !== 'stopped')) throw new Error('stopAll failed')
+  const activeAfter = registry.list(workspace, { activeOnly: true }).workloads
+  if (activeAfter.length !== 0) throw new Error('stopAll left active workloads')
+  started = await registry.start(workspace, { command, label:`smoke:${port}` })
   const restarted = await registry.restart(workspace, started.workloadId)
   if (restarted.workloadId !== started.workloadId || restarted.runId === started.runId || restarted.generation !== 2) throw new Error('restart identity failed')
   await registry.wait(workspace, started.workloadId, { port, timeout_ms:15000 })
   const stopped = await registry.stop(workspace, started.workloadId)
   if (stopped.phase !== 'stopped') throw new Error('stop failed')
-  console.log(JSON.stringify({ migrated:migrated.workloads.length, workloadId:started.workloadId, firstRunId:started.runId, secondRunId:restarted.runId, generation:restarted.generation, redacted:true, stopped:stopped.phase }, null, 2))
+  console.log(JSON.stringify({ migrated:migrated.workloads.length, workloadId:started.workloadId, firstRunId:started.runId, secondRunId:restarted.runId, generation:restarted.generation, redacted:true, stopAll:allStopped.stopped, stopped:stopped.phase }, null, 2))
 } finally {
   if (started) { try { await registry.stop(workspace, started.workloadId) } catch {} }
-  fs.rmSync(temp, { recursive:true, force:true })
+  if (second) { try { await registry.stop(workspace, second.workloadId) } catch {} }
+  // Give detached runners a moment to release their file handles on Windows
+  // before removing the temp tree; otherwise rmSync can fail with EPERM.
+  await new Promise((resolve) => setTimeout(resolve, 1500))
+  fs.rmSync(temp, { recursive:true, force:true, maxRetries:5, retryDelay:300 })
 }
