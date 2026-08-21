@@ -11,5 +11,5 @@ const plugin=definition.factory((name)=>{if(name==='react')return{createElement(
 let registration=null
 const ctx={slots:{inject(name,callback){if(name!=='conversation.view')throw new Error('unexpected slot');return callback()},register(options,component){registration={options,component};return()=>{}}}}
 plugin.apply(ctx)
-if(registration?.options?.id!=='runtime-center'||registration.options.label!=='运行中心'||typeof registration.component!=='function')throw new Error('runtime center slot registration failed')
+if(registration?.options?.id!=='runtime-center'||registration.options.label!=='运行中心(0)'||typeof registration.component!=='function')throw new Error('runtime center slot registration failed')
 console.log(JSON.stringify({moduleId:definition.id,slot:registration.options.name,id:registration.options.id,label:registration.options.label}))
